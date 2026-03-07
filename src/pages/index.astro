@@ -18,12 +18,10 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     {/* ─── RIGHT HALF: Auto-Scrolling Projects ─── */}
     <div class="projects-column">
-      <div class="projects-carousel" id="projects-carousel">
-        <div class="scrolling-track" id="scrolling-track">
-          {/* Render twice for the infinite loop illusion */}
-          <ProjectsGrid featured />
-          <ProjectsGrid featured />
-        </div>
+      <div class="projects-carousel" id="projects-carousel" style="scroll-behavior: auto;">
+          <div class="scrolling-track" id="scrolling-track">
+            <ProjectsGrid featured />
+          </div>
       </div>
     </div>
   </div>
@@ -124,24 +122,43 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cast as HTMLElement so TS knows exactly what these are
     const carousel = document.getElementById('projects-carousel') as HTMLElement | null;
     const track = document.getElementById('scrolling-track') as HTMLElement | null;
 
-    if (!carousel || !track) return;
+    // Grab the actual grid element rendered by Astro
+    const originalGrid = track?.firstElementChild as HTMLElement | null;
+
+    if (!carousel || !track || !originalGrid) return;
+
+    // 1. DYNAMIC CLONING
+    // Clone the grid twice so we always have enough runway to loop seamlessly
+    const clone1 = originalGrid.cloneNode(true) as HTMLElement;
+    const clone2 = originalGrid.cloneNode(true) as HTMLElement;
+    track.appendChild(clone1);
+    track.appendChild(clone2);
+
+    // 2. PRECISE MEASUREMENT
+    // Get the exact width of ONE grid block (including its internal gaps)
+    let singleGridWidth = originalGrid.getBoundingClientRect().width;
+
+    // Recalculate if the user resizes their browser window
+    window.addEventListener('resize', () => {
+      singleGridWidth = originalGrid.getBoundingClientRect().width;
+    });
 
     let isPaused = false;
     let scrollSpeed = 1;
-
-    // 2. Explicitly type activeCard as an anchor element or null
     let activeCard: HTMLAnchorElement | null = null;
 
     function autoScroll() {
-      // 3. Use the non-null assertion (!) because we already validated them above
       if (!isPaused) {
         carousel!.scrollLeft += scrollSpeed;
-        if (carousel!.scrollLeft >= track!.scrollWidth / 2) {
-          carousel!.scrollLeft = 0;
+
+        // 3. THE PERFECT RESET
+        // The moment we scroll exactly past the first grid block, we snap back.
+        // Because clone1 looks identically positioned, the user's eye detects nothing.
+        if (carousel!.scrollLeft >= singleGridWidth) {
+          carousel!.scrollLeft -= singleGridWidth;
         }
       }
       requestAnimationFrame(autoScroll);
@@ -149,12 +166,9 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     requestAnimationFrame(autoScroll);
 
-    // 4. Specify the event type (MouseEvent)
+    // --- HOVER LOGIC (Remains the same as before) ---
     track.addEventListener('mouseover', (e: MouseEvent) => {
-      // 5. Cast the generic EventTarget to an HTMLElement
-      const target = e.target as HTMLElement;
-      if (!target) return;
-
+      const target = e.target as Element;
       const card = target.closest('a');
       if (!card) return;
 
@@ -177,26 +191,22 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
         cardRect.left - carouselRect.left - carouselRect.width / 2 + cardRect.width / 2;
 
       const buffer = Math.min(20, cardRect.width / 4);
-
       const maxScroll = cardRect.right - e.clientX - buffer;
       const minScroll = cardRect.left - e.clientX + buffer;
 
       const safeOffset = Math.max(minScroll, Math.min(maxScroll, idealOffset));
 
+      // This programmatic smooth scroll will still work perfectly even with the inline auto style
       carousel.scrollBy({ left: safeOffset, behavior: 'smooth' });
     });
 
     track.addEventListener('mouseout', (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
-
+      const target = e.target as Element;
       const card = target.closest('a');
       if (!card) return;
 
-      // 6. Cast relatedTarget to HTMLElement so we can safely check it
-      const related = e.relatedTarget as HTMLElement | null;
+      const related = e.relatedTarget as Element | null;
 
-      // We must check if `related` exists before using it in `.contains()`
       if (related && card.contains(related)) {
         return;
       }
@@ -204,7 +214,9 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       card.classList.remove('active-hover');
       activeCard = null;
 
-      if (!related || !related.closest('a')) {
+      const isMovingToAnotherCard = related instanceof Element ? related.closest('a') : null;
+
+      if (!isMovingToAnotherCard) {
         track.classList.remove('is-hovered');
         isPaused = false;
       }
