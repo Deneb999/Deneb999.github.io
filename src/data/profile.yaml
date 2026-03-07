@@ -9,11 +9,11 @@
   avatar: /avatar-placeholder.svg
   bio:
     - "I'm a software engineer who can't resist picking up something new.
-    Whenever a project catches my eye, I jump in without hesitation. 
-    Learning isn't just a habit for me. It's the thing that keeps coding exciting."
-    - "I was into Artificial Intelligence before it was cool. 
-    When I'm not writing code, you'll find me volunteering in international environments, 
-    playing board games, or writing."
+      Whenever a project catches my eye, I jump in without hesitation.
+      Learning isn't just a habit for me. It's the thing that keeps coding exciting."
+    - "I was into Artificial Intelligence before it was cool.
+      When I'm not writing code, you'll find me volunteering in international environments,
+      playing board games, or writing."
   skills:
     - Python
     - C
