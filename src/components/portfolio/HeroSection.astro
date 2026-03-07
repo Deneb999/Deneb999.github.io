@@ -23,18 +23,6 @@ if (!profile) {
       <div class="hero__bg" aria-hidden="true"></div>
 
       <div class="hero__text">
-        {
-          profile.avatar && (
-            <img
-              src={profile.avatar}
-              alt={`Photo of ${profile.name}`}
-              class="hero__avatar"
-              width="96"
-              height="96"
-              loading="eager"
-            />
-          )
-        }
 
         <h1 class="hero__name">{profile.name}</h1>
         <p class="hero__role">{profile.role}</p>
