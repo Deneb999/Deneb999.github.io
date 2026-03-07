@@ -81,5 +81,4 @@ describe('Content Collections — Data Validation', () => {
       }
     });
   });
-  });
 });
