@@ -11,7 +11,6 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
 <BaseLayout>
   <div class="hero-split-wrapper">
-
     {/* ─── LEFT HALF: Reused Hero Component ─── */}
     <div class="hero-column">
       <HeroSection />
@@ -27,7 +26,6 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
         </div>
       </div>
     </div>
-
   </div>
 </BaseLayout>
 
@@ -84,59 +82,66 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
   }
 
   /* Update your existing global selector in index.astro to target the grid specifically */
-.scrolling-track :global(.projects-grid) {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: var(--space-md);
-  padding-right: var(--space-md);
-}
+  .scrolling-track :global(.projects-grid) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: var(--space-md);
+    padding-right: var(--space-md);
+  }
 
-/* ─── ADD THIS: Constrain the project cards in the carousel ─── */
-.scrolling-track :global(.project-card) {
-  width: 320px; /* Locks the card width. Adjust this number to your liking! */
-  flex-shrink: 0; /* Prevents flexbox from squishing the cards together */
-  white-space: normal; /* Ensures your description text still wraps properly */
-}
+  /* ─── ADD THIS: Constrain the project cards in the carousel ─── */
+  .scrolling-track :global(.project-card) {
+    width: 320px; /* Locks the card width. Adjust this number to your liking! */
+    flex-shrink: 0; /* Prevents flexbox from squishing the cards together */
+    white-space: normal; /* Ensures your description text still wraps properly */
+  }
 
-/* Smooth transitions for all cards */
-#scrolling-track a {
-  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
-  transform-origin: center center;
-}
+  /* Smooth transitions for all cards */
+  #scrolling-track a {
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease,
+      filter 0.3s ease;
+    transform-origin: center center;
+  }
 
-/* When the track is actively being hovered, dim ALL cards */
-#scrolling-track.is-hovered a {
-  opacity: 0.4;
-  filter: grayscale(80%);
-  transform: scale(0.95); /* Slight shrink makes the zoomed card pop more */
-}
+  /* When the track is actively being hovered, dim ALL cards */
+  #scrolling-track.is-hovered a {
+    opacity: 0.4;
+    filter: grayscale(80%);
+    transform: scale(0.95); /* Slight shrink makes the zoomed card pop more */
+  }
 
-/* The specific card being hovered stays fully visible and zooms in */
-#scrolling-track.is-hovered a.active-hover {
-  opacity: 1;
-  filter: grayscale(0%);
-  transform: scale(1.1); /* Zoom in effect */
-  z-index: 10;
-  position: relative; /* Ensures it sits above the dimmed cards */
-}
+  /* The specific card being hovered stays fully visible and zooms in */
+  #scrolling-track.is-hovered a.active-hover {
+    opacity: 1;
+    filter: grayscale(0%);
+    transform: scale(1.1); /* Zoom in effect */
+    z-index: 10;
+    position: relative; /* Ensures it sits above the dimmed cards */
+  }
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const carousel = document.getElementById('projects-carousel');
-    const track = document.getElementById('scrolling-track');
+    // 1. Cast as HTMLElement so TS knows exactly what these are
+    const carousel = document.getElementById('projects-carousel') as HTMLElement | null;
+    const track = document.getElementById('scrolling-track') as HTMLElement | null;
 
     if (!carousel || !track) return;
 
     let isPaused = false;
     let scrollSpeed = 1;
-    let activeCard = null; // Keep track of the currently hovered card
+
+    // 2. Explicitly type activeCard as an anchor element or null
+    let activeCard: HTMLAnchorElement | null = null;
 
     function autoScroll() {
+      // 3. Use the non-null assertion (!) because we already validated them above
       if (!isPaused) {
-        carousel.scrollLeft += scrollSpeed;
-        if (carousel.scrollLeft >= track.scrollWidth / 2) {
-          carousel.scrollLeft = 0;
+        carousel!.scrollLeft += scrollSpeed;
+        if (carousel!.scrollLeft >= track!.scrollWidth / 2) {
+          carousel!.scrollLeft = 0;
         }
       }
       requestAnimationFrame(autoScroll);
@@ -144,14 +149,17 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     requestAnimationFrame(autoScroll);
 
-    track.addEventListener('mouseover', (e) => {
-      const card = e.target.closest('a');
+    // 4. Specify the event type (MouseEvent)
+    track.addEventListener('mouseover', (e: MouseEvent) => {
+      // 5. Cast the generic EventTarget to an HTMLElement
+      const target = e.target as HTMLElement;
+      if (!target) return;
+
+      const card = target.closest('a');
       if (!card) return;
 
-      // Prevent redundant triggers if we are already hovering this exact card
       if (activeCard === card) return;
 
-      // If switching directly from one card to another
       if (activeCard) {
         activeCard.classList.remove('active-hover');
       }
@@ -159,47 +167,44 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       activeCard = card;
       isPaused = true;
 
-      // Apply CSS classes
       track.classList.add('is-hovered');
       card.classList.add('active-hover');
 
-      // --- SAFE SCROLL LOGIC ---
       const carouselRect = carousel.getBoundingClientRect();
       const cardRect = card.getBoundingClientRect();
 
-      // 1. Calculate how far we *want* to scroll to perfectly center it
-      const idealOffset = (cardRect.left - carouselRect.left) - (carouselRect.width / 2) + (cardRect.width / 2);
+      const idealOffset =
+        cardRect.left - carouselRect.left - carouselRect.width / 2 + cardRect.width / 2;
 
-      // 2. Calculate the boundaries to keep the mouse safely over the card
-      // We use a dynamic buffer (e.g., 20px) so the mouse doesn't ride the exact edge
       const buffer = Math.min(20, cardRect.width / 4);
 
-      // If container scrolls Right (positive offset), card moves Left relative to cursor
       const maxScroll = cardRect.right - e.clientX - buffer;
-      // If container scrolls Left (negative offset), card moves Right relative to cursor
       const minScroll = cardRect.left - e.clientX + buffer;
 
-      // 3. Clamp the ideal offset so it doesn't exceed our safe boundaries
       const safeOffset = Math.max(minScroll, Math.min(maxScroll, idealOffset));
 
       carousel.scrollBy({ left: safeOffset, behavior: 'smooth' });
     });
 
-    track.addEventListener('mouseout', (e) => {
-      const card = e.target.closest('a');
+    track.addEventListener('mouseout', (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+
+      const card = target.closest('a');
       if (!card) return;
 
-      // Check if the mouse is truly leaving the card, or just moving into a child element (like an image or text tag) inside the card
-      if (card.contains(e.relatedTarget)) {
+      // 6. Cast relatedTarget to HTMLElement so we can safely check it
+      const related = e.relatedTarget as HTMLElement | null;
+
+      // We must check if `related` exists before using it in `.contains()`
+      if (related && card.contains(related)) {
         return;
       }
 
-      // Mouse truly left the card
       card.classList.remove('active-hover');
       activeCard = null;
 
-      // If the mouse didn't immediately enter another card, resume normal scrolling
-      if (!e.relatedTarget || !e.relatedTarget.closest('a')) {
+      if (!related || !related.closest('a')) {
         track.classList.remove('is-hovered');
         isPaused = false;
       }
