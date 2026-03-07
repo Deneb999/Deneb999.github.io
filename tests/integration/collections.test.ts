@@ -81,25 +81,5 @@ describe('Content Collections — Data Validation', () => {
       }
     });
   });
-
-  describe('projects.yaml', () => {
-    it('has entries with required fields', () => {
-      const data = loadYaml<Record<string, unknown>[]>('projects.yaml');
-      expect(data.length).toBeGreaterThan(0);
-
-      for (const entry of data) {
-        expect(entry).toHaveProperty('id');
-        expect(entry).toHaveProperty('title');
-        expect(entry).toHaveProperty('description');
-        expect(entry).toHaveProperty('tags');
-        expect(Array.isArray(entry.tags)).toBe(true);
-      }
-    });
-
-    it('has at least one featured project', () => {
-      const data = loadYaml<Record<string, unknown>[]>('projects.yaml');
-      const featured = data.filter((p) => p.featured === true);
-      expect(featured.length).toBeGreaterThan(0);
-    });
   });
 });

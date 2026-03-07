@@ -1,23 +1,20 @@
-- id: elena
-  name: Elena Navarro
-  role: Software Engineer & Creative Technologist
+- id: deneb
+  name: Deneb Mecha
+  role: Computer Engineer & Mathematician
   tagline: Building clean, accessible digital experiences with curiosity and craft.
   location: Madrid, Spain
-  email: elena@example.dev
-  github: https://github.com/elenanavarro
-  linkedin: https://linkedin.com/in/elenanavarro
+  email: danidmecha@gmail.com
+  github: https://github.com/Deneb999
+  linkedin: https://www.linkedin.com/in/deneb-mecha/
   avatar: /avatar-placeholder.svg
   bio:
-    - "I'm a software engineer with a passion for the intersection of design and technology. I love crafting interfaces that feel intuitive and tools that make developers' lives easier."
-    - "Currently focused on frontend architecture, design systems, and creative coding. When I'm not writing code, you'll find me mentoring at local tech communities, experimenting with generative art, or hiking in the Sierra de Guadarrama."
+    - "I'm a software engineer who can't resist picking up something new.
+    Whenever a project catches my eye, I jump in without hesitation. 
+    Learning isn't just a habit for me. It's the thing that keeps coding exciting."
+    - "I was into Artificial Intelligence before it was cool. 
+    When I'm not writing code, you'll find me volunteering in international environments, 
+    playing board games, or writing."
   skills:
-    - TypeScript
-    - React
-    - Astro
-    - Node.js
     - Python
-    - Figma
-    - Accessibility
-    - Design Systems
-    - Open Source
-    - Technical Writing
+    - C
+    - Java

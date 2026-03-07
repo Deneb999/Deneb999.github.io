@@ -85,9 +85,8 @@ const volunteering = defineCollection({
 
 /* ─── Projects ──────────────────────────────────────────── */
 const projects = defineCollection({
-  loader: file('src/data/projects.yaml'),
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/data/projects' }),
   schema: z.object({
-    id: z.string(),
     title: z.string(),
     description: z.string(),
     tags: z.array(z.string()),
@@ -95,6 +94,7 @@ const projects = defineCollection({
     repo: z.string().url().optional(),
     image: z.string().optional(),
     featured: z.boolean().default(false),
+    draft: z.boolean().default(false),
   }),
 });
 

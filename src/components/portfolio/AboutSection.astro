@@ -3,6 +3,7 @@
  * AboutSection — Bio paragraphs + skills grid.
  */
 import Badge from '../ui/Badge.astro';
+import SocialLinks from '../ui/SocialLinks.astro';
 import { getCollection } from 'astro:content';
 
 const profileEntries = await getCollection('profile');
@@ -12,6 +13,12 @@ const profile = profileEntries[0]?.data;
 {
   profile && (
     <div class="about">
+      <header class="about__header">
+        <h1 class="about__name">{profile.name}</h1>
+        <p class="about__role">{profile.role}</p>
+        <SocialLinks github={profile.github} linkedin={profile.linkedin} email={profile.email} />
+      </header>
+
       <div class="about__bio">
         {profile.bio.map((paragraph: string) => (
           <p>{paragraph}</p>
@@ -34,6 +41,24 @@ const profile = profileEntries[0]?.data;
   .about {
     display: grid;
     gap: var(--space-xl);
+  }
+
+  .about__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-lg);
+  }
+
+  .about__name {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.03em;
+  }
+
+  .about__role {
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
   }
 
   @media (min-width: 768px) {

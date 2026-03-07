@@ -5,13 +5,14 @@
  *     These are used by the Navbar, Footer, SEO meta tags, etc.
  */
 
-export const SITE_TITLE = 'Elena Navarro — Portfolio';
+export const SITE_TITLE = 'Deneb Mecha — Portfolio';
 export const SITE_DESCRIPTION =
   'Software Engineer & Creative Technologist. Building clean, accessible web experiences.';
 
 /** Navigation links shown in the Navbar */
 export const NAV_LINKS = [
   { label: 'Home', href: '/' },
+  { label: 'About', href: '/about' },
   { label: 'Posts', href: '/posts' },
   { label: 'Projects', href: '/projects' },
 ] as const;

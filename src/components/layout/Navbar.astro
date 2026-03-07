@@ -8,9 +8,11 @@
  * - Uses vanilla JS for the mobile toggle (no frameworks)
  */
 import { NAV_LINKS, SITE_TITLE } from '../../utils/constants';
-import ThemeSwitcher from '../ui/ThemeSwitcher.astro';
+import { getCollection } from 'astro:content';
 
 const currentPath = Astro.url.pathname;
+const posts = await getCollection('posts', ({ data }) => !data.draft);
+const hasPosts = posts.length > 0;
 ---
 
 <header class="navbar" role="banner">
@@ -30,14 +32,10 @@ const currentPath = Astro.url.pathname;
       </button>
     </div>
 
-    <div class="navbar__actions">
-      <ThemeSwitcher />
-    </div>
-
     <div class="navbar__menu" id="nav-menu">
       <ul class="navbar__links">
         {
-          NAV_LINKS.map((link) => (
+          NAV_LINKS.filter((link) => link.href !== '/posts' || hasPosts).map((link) => (
             <li>
               <a
                 href={link.href}
@@ -98,15 +96,6 @@ const currentPath = Astro.url.pathname;
     color: var(--color-accent);
   }
 
-  .navbar__actions {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    margin-top: var(--space-xs);
-    order: 3;
-  }
-
   /* Desktop menu */
   .navbar__menu {
     display: flex;
@@ -131,12 +120,6 @@ const currentPath = Astro.url.pathname;
       display: flex !important; /* Ensure menu is visible on tablet/desktop */
       order: 2;
     }
-
-    .navbar__actions {
-      order: 3;
-      width: 100%; /* Forces themes to the next line */
-      margin-top: var(--space-xs);
-    }
   }
 
   @media (min-width: 1000px) {
@@ -146,15 +129,8 @@ const currentPath = Astro.url.pathname;
       padding-block: 0;
     }
 
-    .navbar__actions {
-      order: 2;
-      width: auto;
-      margin-top: 0;
-      margin-inline: var(--space-md);
-    }
-
     .navbar__menu {
-      order: 3;
+      order: 2;
       margin-left: auto;
     }
   }

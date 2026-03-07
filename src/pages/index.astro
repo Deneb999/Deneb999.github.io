@@ -2,105 +2,207 @@
 /**
  * Homepage — The main portfolio page.
  *
- * Sections: Hero → About → Experience → Education → Volunteering → Projects → Posts
- *
- * All content comes from Content Collections. To edit what appears here,
- * modify the YAML/Markdown files in src/data/ — no need to touch this file!
+ * Sections: Split Layout -> Hero (Left) & Auto-Scrolling Featured Projects (Right)
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Section from '../components/layout/Section.astro';
 import HeroSection from '../components/portfolio/HeroSection.astro';
-import AboutSection from '../components/portfolio/AboutSection.astro';
-import ExperienceList from '../components/portfolio/ExperienceList.astro';
-import EducationList from '../components/portfolio/EducationList.astro';
-import VolunteeringList from '../components/portfolio/VolunteeringList.astro';
 import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
-import PostCard from '../components/portfolio/PostCard.astro';
-import Button from '../components/ui/Button.astro';
-import { getCollection } from 'astro:content';
-
-// Get latest 3 posts (non-draft, sorted by date)
-const allPosts = await getCollection('posts', ({ data }) => !data.draft);
-const latestPosts = allPosts
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .slice(0, 3);
 ---
 
 <BaseLayout>
-  {/* ─── Hero ─── */}
-  <HeroSection />
+  <div class="hero-split-wrapper">
 
-  {/* ─── About ─── */}
-  <Section id="about" title="About" subtitle="A little bit about me">
-    <AboutSection />
-  </Section>
-
-  {/* ─── Experience ─── */}
-  <Section id="experience" title="Experience" subtitle="Where I've worked">
-    <ExperienceList />
-  </Section>
-
-  {/* ─── Education ─── */}
-  <Section id="education" title="Education" subtitle="My academic background">
-    <EducationList />
-  </Section>
-
-  {/* ─── Volunteering ─── */}
-  <Section id="volunteering" title="Volunteering" subtitle="Giving back to the community">
-    <VolunteeringList />
-  </Section>
-
-  {/* ─── Projects ─── */}
-  <Section id="projects" title="Projects" subtitle="Things I've built">
-    <ProjectsGrid featured />
-    <div class="section-cta">
-      <Button href="/projects" variant="outline" size="sm">View all projects →</Button>
+    {/* ─── LEFT HALF: Reused Hero Component ─── */}
+    <div class="hero-column">
+      <HeroSection />
     </div>
-  </Section>
 
-  {/* ─── Latest Posts ─── */}
-  <Section id="posts" title="Latest Posts" subtitle="Thoughts, learnings, and ideas">
-    <div class="posts-grid">
-      {
-        latestPosts.map((post) => (
-          <PostCard
-            title={post.data.title}
-            description={post.data.description}
-            pubDate={post.data.pubDate}
-            tags={post.data.tags}
-            slug={post.id}
-          />
-        ))
-      }
+    {/* ─── RIGHT HALF: Auto-Scrolling Projects ─── */}
+    <div class="projects-column">
+      <div class="projects-carousel" id="projects-carousel">
+        <div class="scrolling-track" id="scrolling-track">
+          {/* Render twice for the infinite loop illusion */}
+          <ProjectsGrid featured />
+          <ProjectsGrid featured />
+        </div>
+      </div>
     </div>
-    <div class="section-cta">
-      <Button href="/posts" variant="outline" size="sm">View all posts →</Button>
-    </div>
-  </Section>
+
+  </div>
 </BaseLayout>
 
 <style>
-  .posts-grid {
+  .hero-split-wrapper {
     display: grid;
-    gap: var(--space-md);
     grid-template-columns: 1fr;
-  }
-
-  @media (min-width: 640px) {
-    .posts-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    align-items: center;
+    overflow: hidden;
   }
 
   @media (min-width: 1024px) {
-    .posts-grid {
-      grid-template-columns: repeat(3, 1fr);
+    .hero-split-wrapper {
+      grid-template-columns: 1fr 1fr;
     }
   }
 
-  .section-cta {
-    margin-top: var(--space-lg);
-    display: flex;
-    justify-content: center;
+  .projects-column {
+    width: 100%;
+    min-width: 0;
+    padding-block: var(--space-2xl);
   }
+
+  /* Notice we removed the animation and added hidden overflow */
+  .projects-carousel {
+    width: 100%;
+    overflow-x: hidden; /* Hides the scrollbar but allows JS to scroll it */
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  }
+
+  .scrolling-track {
+    display: flex;
+    width: max-content;
+    /* We removed the CSS @keyframes animation here */
+  }
+
+  .scrolling-track > :global(*) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: var(--space-md);
+    padding-right: var(--space-md);
+  }
+
+  /* Optional: Add a subtle scale effect to the hovered card */
+  .scrolling-track :global(a),
+  .scrolling-track :global(article) {
+    transition: transform 0.3s ease;
+  }
+
+  .scrolling-track :global(a:hover),
+  .scrolling-track :global(article:hover) {
+    transform: scale(1.02);
+  }
+
+  /* Update your existing global selector in index.astro to target the grid specifically */
+.scrolling-track :global(.projects-grid) {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: var(--space-md);
+  padding-right: var(--space-md);
+}
+
+/* ─── ADD THIS: Constrain the project cards in the carousel ─── */
+.scrolling-track :global(.project-card) {
+  width: 320px; /* Locks the card width. Adjust this number to your liking! */
+  flex-shrink: 0; /* Prevents flexbox from squishing the cards together */
+  white-space: normal; /* Ensures your description text still wraps properly */
+}
+
+/* Smooth transitions for all cards */
+#scrolling-track a {
+  transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+  transform-origin: center center;
+}
+
+/* When the track is actively being hovered, dim ALL cards */
+#scrolling-track.is-hovered a {
+  opacity: 0.4;
+  filter: grayscale(80%);
+  transform: scale(0.95); /* Slight shrink makes the zoomed card pop more */
+}
+
+/* The specific card being hovered stays fully visible and zooms in */
+#scrolling-track.is-hovered a.active-hover {
+  opacity: 1;
+  filter: grayscale(0%);
+  transform: scale(1.1); /* Zoom in effect */
+  z-index: 10;
+  position: relative; /* Ensures it sits above the dimmed cards */
+}
 </style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const carousel = document.getElementById('projects-carousel');
+    const track = document.getElementById('scrolling-track');
+
+    if (!carousel || !track) return;
+
+    let isPaused = false;
+    let scrollSpeed = 1;
+    let activeCard = null; // Keep track of the currently hovered card
+
+    function autoScroll() {
+      if (!isPaused) {
+        carousel.scrollLeft += scrollSpeed;
+        if (carousel.scrollLeft >= track.scrollWidth / 2) {
+          carousel.scrollLeft = 0;
+        }
+      }
+      requestAnimationFrame(autoScroll);
+    }
+
+    requestAnimationFrame(autoScroll);
+
+    track.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('a');
+      if (!card) return;
+
+      // Prevent redundant triggers if we are already hovering this exact card
+      if (activeCard === card) return;
+
+      // If switching directly from one card to another
+      if (activeCard) {
+        activeCard.classList.remove('active-hover');
+      }
+
+      activeCard = card;
+      isPaused = true;
+
+      // Apply CSS classes
+      track.classList.add('is-hovered');
+      card.classList.add('active-hover');
+
+      // --- SAFE SCROLL LOGIC ---
+      const carouselRect = carousel.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+
+      // 1. Calculate how far we *want* to scroll to perfectly center it
+      const idealOffset = (cardRect.left - carouselRect.left) - (carouselRect.width / 2) + (cardRect.width / 2);
+
+      // 2. Calculate the boundaries to keep the mouse safely over the card
+      // We use a dynamic buffer (e.g., 20px) so the mouse doesn't ride the exact edge
+      const buffer = Math.min(20, cardRect.width / 4);
+
+      // If container scrolls Right (positive offset), card moves Left relative to cursor
+      const maxScroll = cardRect.right - e.clientX - buffer;
+      // If container scrolls Left (negative offset), card moves Right relative to cursor
+      const minScroll = cardRect.left - e.clientX + buffer;
+
+      // 3. Clamp the ideal offset so it doesn't exceed our safe boundaries
+      const safeOffset = Math.max(minScroll, Math.min(maxScroll, idealOffset));
+
+      carousel.scrollBy({ left: safeOffset, behavior: 'smooth' });
+    });
+
+    track.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('a');
+      if (!card) return;
+
+      // Check if the mouse is truly leaving the card, or just moving into a child element (like an image or text tag) inside the card
+      if (card.contains(e.relatedTarget)) {
+        return;
+      }
+
+      // Mouse truly left the card
+      card.classList.remove('active-hover');
+      activeCard = null;
+
+      // If the mouse didn't immediately enter another card, resume normal scrolling
+      if (!e.relatedTarget || !e.relatedTarget.closest('a')) {
+        track.classList.remove('is-hovered');
+        isPaused = false;
+      }
+    });
+  });
+</script>
