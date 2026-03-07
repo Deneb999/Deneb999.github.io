@@ -115,6 +115,25 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     z-index: 10;
     position: relative;
   }
+
+  .projects-carousel {
+    width: 100%;
+    /* Let the browser handle the scrolling/inertia natively */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Enables smooth momentum scrolling on iOS */
+
+    /* Hide scrollbars for a clean look */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .projects-carousel::-webkit-scrollbar {
+    display: none;
+  }
 </style>
 
 <script>
@@ -141,10 +160,20 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     let scrollSpeed = 1;
     let activeCard: HTMLAnchorElement | null = null;
 
+    // ─── ADDED: The permanent kill-switch for mobile ───
+    let hasInteracted = false;
+
+    // Once the user physically touches the carousel, permanently stop auto-scroll
+    carousel.addEventListener('touchstart', () => {
+      hasInteracted = true;
+    }, { passive: true });
+
     function autoScroll() {
+      // If the user touched it, kill the animation frame loop forever
+      if (hasInteracted) return;
+
       if (!isPaused) {
         carousel!.scrollLeft += scrollSpeed;
-
         if (carousel!.scrollLeft >= singleGridWidth) {
           carousel!.scrollLeft -= singleGridWidth;
         }
@@ -154,49 +183,23 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     requestAnimationFrame(autoScroll);
 
-    // ─── ADDED: MOBILE TOUCH DRAG LOGIC ───
-    let isDragging = false;
-    let startX = 0;
-    let initialScrollLeft = 0;
+    // ─── ADDED: Infinite loop for manual/inertia scrolling ───
+    // This watches the native browser scroll and seamlessly snaps the
+    // carousel forward or backward so they never hit a dead end.
+    carousel.addEventListener('scroll', () => {
+      if (!hasInteracted) return; // Let auto-scroll handle itself if untouched
 
-    carousel.addEventListener('touchstart', (e) => {
-      isDragging = true;
-      isPaused = true; // Pause auto-scroll while holding
-      startX = e.touches[0].clientX;
-      initialScrollLeft = carousel.scrollLeft;
-    }, { passive: true });
-
-    carousel.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-
-      const x = e.touches[0].clientX;
-      const walk = startX - x; // Distance moved
-      carousel.scrollLeft = initialScrollLeft + walk;
-
-      // Maintain infinite loop math if they drag past the boundaries
-      if (carousel.scrollLeft >= singleGridWidth) {
+      if (carousel.scrollLeft >= singleGridWidth * 2) {
         carousel.scrollLeft -= singleGridWidth;
-        initialScrollLeft -= singleGridWidth;
       } else if (carousel.scrollLeft <= 0) {
         carousel.scrollLeft += singleGridWidth;
-        initialScrollLeft += singleGridWidth;
       }
     }, { passive: true });
 
-    const stopDragging = () => {
-      isDragging = false;
-      if (!track.classList.contains('is-hovered')) {
-        isPaused = false; // Resume auto-scroll if nothing is actively hovered
-      }
-    };
 
-    carousel.addEventListener('touchend', stopDragging);
-    carousel.addEventListener('touchcancel', stopDragging);
-
-
-    // --- HOVER LOGIC (Remains exactly the same for PC) ---
+    // --- PC HOVER LOGIC (Unchanged) ---
     track.addEventListener('mouseover', (e: MouseEvent) => {
-      if (isDragging) return; // Ignore accidental hovers during a mobile swipe
+      if (hasInteracted) return; // Don't trigger auto-center zooming if on mobile
 
       const target = e.target as Element;
       const card = target.closest('a');
@@ -228,7 +231,7 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     });
 
     track.addEventListener('mouseout', (e: MouseEvent) => {
-      if (isDragging) return;
+      if (hasInteracted) return;
 
       const target = e.target as Element;
       const card = target.closest('a');
