@@ -5,7 +5,7 @@ tags:
   - Hardware
   - Productivity
 featured: true
-image: /Toco-toucan.webp
+image: /incentive machine.webp
 ---
 
 Writing is oftentimes a chore. It doesn't matter if you are trying to push 
