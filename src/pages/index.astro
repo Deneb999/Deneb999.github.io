@@ -11,12 +11,10 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
 <BaseLayout>
   <div class="hero-split-wrapper">
-    {/* ─── LEFT HALF: Reused Hero Component ─── */}
     <div class="hero-column">
       <HeroSection />
     </div>
 
-    {/* ─── RIGHT HALF: Auto-Scrolling Projects ─── */}
     <div class="projects-column">
       <div class="projects-carousel" id="projects-carousel">
           <div class="scrolling-track" id="scrolling-track">
@@ -47,22 +45,18 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     padding-block: var(--space-2xl);
   }
 
-  /* ─── CRITICAL CSS FIXES FOR MOBILE SCROLLING ─── */
   .projects-carousel {
     width: 100%;
-    overflow-x: auto; /* MUST be auto for native mobile swiping */
-    -webkit-overflow-scrolling: touch; /* Enables buttery iOS momentum scrolling */
-
-    /* Hide scrollbars for a clean look */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
-
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
   }
 
   .projects-carousel::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
+    display: none;
   }
 
   .scrolling-track {
@@ -125,19 +119,17 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const carousel = document.getElementById('projects-carousel') as HTMLElement | null;
-    const track = document.getElementById('scrolling-track') as HTMLElement | null;
-    const originalGrid = track?.firstElementChild as HTMLElement | null;
+    const carousel = document.getElementById('projects-carousel');
+    const track = document.getElementById('scrolling-track');
+    const originalGrid = track?.firstElementChild;
 
     if (!carousel || !track || !originalGrid) return;
 
-    // 1. DYNAMIC CLONING (We need two clones for native infinite scrolling)
-    const clone1 = originalGrid.cloneNode(true) as HTMLElement;
-    const clone2 = originalGrid.cloneNode(true) as HTMLElement;
+    const clone1 = originalGrid.cloneNode(true);
+    const clone2 = originalGrid.cloneNode(true);
     track.appendChild(clone1);
     track.appendChild(clone2);
 
-    // 2. PRECISE MEASUREMENT
     let singleGridWidth = originalGrid.getBoundingClientRect().width;
     window.addEventListener('resize', () => {
       singleGridWidth = originalGrid.getBoundingClientRect().width;
@@ -145,35 +137,29 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     let isPaused = false;
     let scrollSpeed = 1;
-    let activeCard: HTMLAnchorElement | null = null;
+    let activeCard = null;
     let hasInteracted = false;
 
-    // Once touched, kill the JS auto-scroll and rely on native CSS scrolling
     carousel.addEventListener('touchstart', () => {
       hasInteracted = true;
     }, { passive: true });
 
     function autoScroll() {
-      // If the user touched it, kill the animation frame loop forever
       if (hasInteracted) return;
 
       if (!isPaused) {
-        carousel!.scrollLeft += scrollSpeed;
-        if (carousel!.scrollLeft >= singleGridWidth) {
-          carousel!.scrollLeft -= singleGridWidth;
+        carousel.scrollLeft += scrollSpeed;
+        if (carousel.scrollLeft >= singleGridWidth) {
+          carousel.scrollLeft -= singleGridWidth;
         }
       }
       requestAnimationFrame(autoScroll);
     }
 
-    // Start auto-scroll on load
     requestAnimationFrame(autoScroll);
 
-    // 3. NATIVE INFINITE SCROLL LOOP
-    // This watches the native browser scroll (when dragged by a finger)
-    // and seamlessly snaps the carousel forward or backward.
     carousel.addEventListener('scroll', () => {
-      if (!hasInteracted) return; // Ignore this logic while JS auto-scroll is running
+      if (!hasInteracted) return;
 
       if (carousel.scrollLeft >= singleGridWidth * 2) {
         carousel.scrollLeft -= singleGridWidth;
@@ -182,12 +168,10 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       }
     }, { passive: true });
 
+    track.addEventListener('mouseover', (e) => {
+      if (hasInteracted) return;
 
-    // --- PC HOVER LOGIC (Unchanged) ---
-    track.addEventListener('mouseover', (e: MouseEvent) => {
-      if (hasInteracted) return; // Disable hover effects after mobile interaction
-
-      const target = e.target as Element;
+      const target = e.target;
       const card = target.closest('a');
       if (!card || activeCard === card) return;
 
@@ -216,20 +200,20 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       carousel.scrollBy({ left: safeOffset, behavior: 'smooth' });
     });
 
-    track.addEventListener('mouseout', (e: MouseEvent) => {
+    track.addEventListener('mouseout', (e) => {
       if (hasInteracted) return;
 
-      const target = e.target as Element;
+      const target = e.target;
       const card = target.closest('a');
       if (!card) return;
 
-      const related = e.relatedTarget as Element | null;
+      const related = e.relatedTarget;
       if (related && card.contains(related)) return;
 
       card.classList.remove('active-hover');
       activeCard = null;
 
-      const isMovingToAnotherCard = related instanceof Element ? related.closest('a') : null;
+      const isMovingToAnotherCard = related ? related.closest('a') : null;
 
       if (!isMovingToAnotherCard) {
         track.classList.remove('is-hovered');
