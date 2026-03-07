@@ -119,14 +119,15 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const carousel = document.getElementById('projects-carousel');
-    const track = document.getElementById('scrolling-track');
-    const originalGrid = track?.firstElementChild;
+    // 1. Added proper HTML element typing back
+    const carousel = document.getElementById('projects-carousel') as HTMLElement | null;
+    const track = document.getElementById('scrolling-track') as HTMLElement | null;
+    const originalGrid = track?.firstElementChild as HTMLElement | null;
 
     if (!carousel || !track || !originalGrid) return;
 
-    const clone1 = originalGrid.cloneNode(true);
-    const clone2 = originalGrid.cloneNode(true);
+    const clone1 = originalGrid.cloneNode(true) as HTMLElement;
+    const clone2 = originalGrid.cloneNode(true) as HTMLElement;
     track.appendChild(clone1);
     track.appendChild(clone2);
 
@@ -137,7 +138,8 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     let isPaused = false;
     let scrollSpeed = 1;
-    let activeCard = null;
+    // 2. Fixed the implicit 'any' type error here
+    let activeCard: HTMLAnchorElement | null = null;
     let hasInteracted = false;
 
     carousel.addEventListener('touchstart', () => {
@@ -147,10 +149,11 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     function autoScroll() {
       if (hasInteracted) return;
 
+      // 3. Added the non-null assertion (!) because TS loses context inside functions
       if (!isPaused) {
-        carousel.scrollLeft += scrollSpeed;
-        if (carousel.scrollLeft >= singleGridWidth) {
-          carousel.scrollLeft -= singleGridWidth;
+        carousel!.scrollLeft += scrollSpeed;
+        if (carousel!.scrollLeft >= singleGridWidth) {
+          carousel!.scrollLeft -= singleGridWidth;
         }
       }
       requestAnimationFrame(autoScroll);
@@ -161,17 +164,20 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     carousel.addEventListener('scroll', () => {
       if (!hasInteracted) return;
 
-      if (carousel.scrollLeft >= singleGridWidth * 2) {
-        carousel.scrollLeft -= singleGridWidth;
-      } else if (carousel.scrollLeft <= 0) {
-        carousel.scrollLeft += singleGridWidth;
+      if (carousel!.scrollLeft >= singleGridWidth * 2) {
+        carousel!.scrollLeft -= singleGridWidth;
+      } else if (carousel!.scrollLeft <= 0) {
+        carousel!.scrollLeft += singleGridWidth;
       }
     }, { passive: true });
 
-    track.addEventListener('mouseover', (e) => {
+    // 4. Properly typed the MouseEvent and Element targets
+    track.addEventListener('mouseover', (e: MouseEvent) => {
       if (hasInteracted) return;
 
-      const target = e.target;
+      const target = e.target as Element | null;
+      if (!target) return;
+
       const card = target.closest('a');
       if (!card || activeCard === card) return;
 
@@ -200,14 +206,16 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       carousel.scrollBy({ left: safeOffset, behavior: 'smooth' });
     });
 
-    track.addEventListener('mouseout', (e) => {
+    track.addEventListener('mouseout', (e: MouseEvent) => {
       if (hasInteracted) return;
 
-      const target = e.target;
+      const target = e.target as Element | null;
+      if (!target) return;
+
       const card = target.closest('a');
       if (!card) return;
 
-      const related = e.relatedTarget;
+      const related = e.relatedTarget as Element | null;
       if (related && card.contains(related)) return;
 
       card.classList.remove('active-hover');
