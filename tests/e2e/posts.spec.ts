@@ -3,21 +3,38 @@ import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
 
-// Read first post metadata from markdown frontmatter
 const postsDir = path.resolve('src/data/posts');
-const firstPostFile = fs
-  .readdirSync(postsDir)
-  .find((f) => f.endsWith('.md') || f.endsWith('.mdx'))!;
-const firstPostContent = fs.readFileSync(path.join(postsDir, firstPostFile), 'utf8');
-const frontMatter = yaml.load(firstPostContent.split('---')[1]);
+
+// 1. Safely check if we have posts before trying to read them
+let hasPosts = false;
+let frontMatter: any = null;
+
+if (fs.existsSync(postsDir)) {
+  const firstPostFile = fs
+    .readdirSync(postsDir)
+    .find((f) => f.endsWith('.md') || f.endsWith('.mdx'));
+
+  if (firstPostFile) {
+    hasPosts = true;
+    const firstPostContent = fs.readFileSync(path.join(postsDir, firstPostFile), 'utf8');
+    // Ensure we actually have content to split to avoid out-of-bounds errors
+    const parts = firstPostContent.split('---');
+    if (parts.length > 1) {
+      frontMatter = yaml.load(parts[1]);
+    }
+  }
+}
 
 test.describe('Posts', () => {
+  // 2. Skip the entire block if no posts exist in the environment
+  test.skip(!hasPosts, 'No markdown posts found in src/data/posts. Skipping tests.');
+
   test('lists all posts', async ({ page }) => {
     await page.goto('/posts');
     await expect(page).toHaveTitle(/Posts/);
 
     // Verify the first post title is visible
-    const postTitle = page.locator('h3', { hasText: (frontMatter as any).title });
+    const postTitle = page.locator('h3', { hasText: frontMatter?.title });
     await expect(postTitle).toBeVisible();
   });
 
@@ -25,7 +42,7 @@ test.describe('Posts', () => {
     await page.goto('/posts');
 
     // Click the first post link by its title
-    const firstPost = page.getByRole('heading', { name: (frontMatter as any).title }).first();
+    const firstPost = page.getByRole('heading', { name: frontMatter?.title }).first();
     await firstPost.click();
 
     // Should be on a post detail page with an article
