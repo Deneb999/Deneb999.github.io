@@ -1,0 +1,1 @@
+Add posts here with the same structure as projects
