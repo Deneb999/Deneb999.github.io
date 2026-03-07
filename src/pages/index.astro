@@ -47,18 +47,21 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     padding-block: var(--space-2xl);
   }
 
-  /* Notice we removed the animation and added hidden overflow */
   .projects-carousel {
     width: 100%;
-    overflow-x: hidden; /* Hides the scrollbar but allows JS to scroll it */
+    overflow-x: hidden;
     mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+
+    /* ADDED: Optimizes touch interactions */
+    touch-action: pan-y; /* Allows vertical page scrolling, but captures horizontal swipes */
+    user-select: none; /* Prevents text highlighting while dragging */
+    -webkit-user-select: none;
   }
 
   .scrolling-track {
     display: flex;
     width: max-content;
-    /* We removed the CSS @keyframes animation here */
   }
 
   .scrolling-track > :global(*) {
@@ -68,7 +71,6 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     padding-right: var(--space-md);
   }
 
-  /* Optional: Add a subtle scale effect to the hovered card */
   .scrolling-track :global(a),
   .scrolling-track :global(article) {
     transition: transform 0.3s ease;
@@ -79,7 +81,6 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     transform: scale(1.02);
   }
 
-  /* Update your existing global selector in index.astro to target the grid specifically */
   .scrolling-track :global(.projects-grid) {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -87,14 +88,12 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     padding-right: var(--space-md);
   }
 
-  /* ─── ADD THIS: Constrain the project cards in the carousel ─── */
   .scrolling-track :global(.project-card) {
-    width: 320px; /* Locks the card width. Adjust this number to your liking! */
-    flex-shrink: 0; /* Prevents flexbox from squishing the cards together */
-    white-space: normal; /* Ensures your description text still wraps properly */
+    width: 320px;
+    flex-shrink: 0;
+    white-space: normal;
   }
 
-  /* Smooth transitions for all cards */
   #scrolling-track a {
     transition:
       opacity 0.3s ease,
@@ -103,20 +102,18 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     transform-origin: center center;
   }
 
-  /* When the track is actively being hovered, dim ALL cards */
   #scrolling-track.is-hovered a {
     opacity: 0.4;
     filter: grayscale(80%);
-    transform: scale(0.95); /* Slight shrink makes the zoomed card pop more */
+    transform: scale(0.95);
   }
 
-  /* The specific card being hovered stays fully visible and zooms in */
   #scrolling-track.is-hovered a.active-hover {
     opacity: 1;
     filter: grayscale(0%);
-    transform: scale(1.1); /* Zoom in effect */
+    transform: scale(1.1);
     z-index: 10;
-    position: relative; /* Ensures it sits above the dimmed cards */
+    position: relative;
   }
 </style>
 
@@ -124,24 +121,18 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
   document.addEventListener('DOMContentLoaded', () => {
     const carousel = document.getElementById('projects-carousel') as HTMLElement | null;
     const track = document.getElementById('scrolling-track') as HTMLElement | null;
-
-    // Grab the actual grid element rendered by Astro
     const originalGrid = track?.firstElementChild as HTMLElement | null;
 
     if (!carousel || !track || !originalGrid) return;
 
     // 1. DYNAMIC CLONING
-    // Clone the grid twice so we always have enough runway to loop seamlessly
     const clone1 = originalGrid.cloneNode(true) as HTMLElement;
     const clone2 = originalGrid.cloneNode(true) as HTMLElement;
     track.appendChild(clone1);
     track.appendChild(clone2);
 
     // 2. PRECISE MEASUREMENT
-    // Get the exact width of ONE grid block (including its internal gaps)
     let singleGridWidth = originalGrid.getBoundingClientRect().width;
-
-    // Recalculate if the user resizes their browser window
     window.addEventListener('resize', () => {
       singleGridWidth = originalGrid.getBoundingClientRect().width;
     });
@@ -154,9 +145,6 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       if (!isPaused) {
         carousel!.scrollLeft += scrollSpeed;
 
-        // 3. THE PERFECT RESET
-        // The moment we scroll exactly past the first grid block, we snap back.
-        // Because clone1 looks identically positioned, the user's eye detects nothing.
         if (carousel!.scrollLeft >= singleGridWidth) {
           carousel!.scrollLeft -= singleGridWidth;
         }
@@ -166,13 +154,53 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     requestAnimationFrame(autoScroll);
 
-    // --- HOVER LOGIC (Remains the same as before) ---
+    // ─── ADDED: MOBILE TOUCH DRAG LOGIC ───
+    let isDragging = false;
+    let startX = 0;
+    let initialScrollLeft = 0;
+
+    carousel.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      isPaused = true; // Pause auto-scroll while holding
+      startX = e.touches[0].clientX;
+      initialScrollLeft = carousel.scrollLeft;
+    }, { passive: true });
+
+    carousel.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+
+      const x = e.touches[0].clientX;
+      const walk = startX - x; // Distance moved
+      carousel.scrollLeft = initialScrollLeft + walk;
+
+      // Maintain infinite loop math if they drag past the boundaries
+      if (carousel.scrollLeft >= singleGridWidth) {
+        carousel.scrollLeft -= singleGridWidth;
+        initialScrollLeft -= singleGridWidth;
+      } else if (carousel.scrollLeft <= 0) {
+        carousel.scrollLeft += singleGridWidth;
+        initialScrollLeft += singleGridWidth;
+      }
+    }, { passive: true });
+
+    const stopDragging = () => {
+      isDragging = false;
+      if (!track.classList.contains('is-hovered')) {
+        isPaused = false; // Resume auto-scroll if nothing is actively hovered
+      }
+    };
+
+    carousel.addEventListener('touchend', stopDragging);
+    carousel.addEventListener('touchcancel', stopDragging);
+
+
+    // --- HOVER LOGIC (Remains exactly the same for PC) ---
     track.addEventListener('mouseover', (e: MouseEvent) => {
+      if (isDragging) return; // Ignore accidental hovers during a mobile swipe
+
       const target = e.target as Element;
       const card = target.closest('a');
-      if (!card) return;
-
-      if (activeCard === card) return;
+      if (!card || activeCard === card) return;
 
       if (activeCard) {
         activeCard.classList.remove('active-hover');
@@ -196,20 +224,18 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
       const safeOffset = Math.max(minScroll, Math.min(maxScroll, idealOffset));
 
-      // This programmatic smooth scroll will still work perfectly even with the inline auto style
       carousel.scrollBy({ left: safeOffset, behavior: 'smooth' });
     });
 
     track.addEventListener('mouseout', (e: MouseEvent) => {
+      if (isDragging) return;
+
       const target = e.target as Element;
       const card = target.closest('a');
       if (!card) return;
 
       const related = e.relatedTarget as Element | null;
-
-      if (related && card.contains(related)) {
-        return;
-      }
+      if (related && card.contains(related)) return;
 
       card.classList.remove('active-hover');
       activeCard = null;
