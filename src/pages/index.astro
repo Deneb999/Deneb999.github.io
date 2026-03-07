@@ -18,7 +18,7 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     {/* ─── RIGHT HALF: Auto-Scrolling Projects ─── */}
     <div class="projects-column">
-      <div class="projects-carousel" id="projects-carousel" style="scroll-behavior: auto;">
+      <div class="projects-carousel" id="projects-carousel">
           <div class="scrolling-track" id="scrolling-track">
             <ProjectsGrid featured />
           </div>
@@ -47,16 +47,22 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     padding-block: var(--space-2xl);
   }
 
+  /* ─── CRITICAL CSS FIXES FOR MOBILE SCROLLING ─── */
   .projects-carousel {
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto; /* MUST be auto for native mobile swiping */
+    -webkit-overflow-scrolling: touch; /* Enables buttery iOS momentum scrolling */
+
+    /* Hide scrollbars for a clean look */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+
     mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  }
 
-    /* ADDED: Optimizes touch interactions */
-    touch-action: pan-y; /* Allows vertical page scrolling, but captures horizontal swipes */
-    user-select: none; /* Prevents text highlighting while dragging */
-    -webkit-user-select: none;
+  .projects-carousel::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
   }
 
   .scrolling-track {
@@ -125,7 +131,7 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
 
     if (!carousel || !track || !originalGrid) return;
 
-    // 1. DYNAMIC CLONING
+    // 1. DYNAMIC CLONING (We need two clones for native infinite scrolling)
     const clone1 = originalGrid.cloneNode(true) as HTMLElement;
     const clone2 = originalGrid.cloneNode(true) as HTMLElement;
     track.appendChild(clone1);
@@ -140,11 +146,19 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     let isPaused = false;
     let scrollSpeed = 1;
     let activeCard: HTMLAnchorElement | null = null;
+    let hasInteracted = false;
+
+    // Once touched, kill the JS auto-scroll and rely on native CSS scrolling
+    carousel.addEventListener('touchstart', () => {
+      hasInteracted = true;
+    }, { passive: true });
 
     function autoScroll() {
+      // If the user touched it, kill the animation frame loop forever
+      if (hasInteracted) return;
+
       if (!isPaused) {
         carousel!.scrollLeft += scrollSpeed;
-
         if (carousel!.scrollLeft >= singleGridWidth) {
           carousel!.scrollLeft -= singleGridWidth;
         }
@@ -152,51 +166,26 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
       requestAnimationFrame(autoScroll);
     }
 
+    // Start auto-scroll on load
     requestAnimationFrame(autoScroll);
 
-    // ─── ADDED: MOBILE TOUCH DRAG LOGIC ───
-    let isDragging = false;
-    let startX = 0;
-    let initialScrollLeft = 0;
+    // 3. NATIVE INFINITE SCROLL LOOP
+    // This watches the native browser scroll (when dragged by a finger)
+    // and seamlessly snaps the carousel forward or backward.
+    carousel.addEventListener('scroll', () => {
+      if (!hasInteracted) return; // Ignore this logic while JS auto-scroll is running
 
-    carousel.addEventListener('touchstart', (e) => {
-      isDragging = true;
-      isPaused = true; // Pause auto-scroll while holding
-      startX = e.touches[0].clientX;
-      initialScrollLeft = carousel.scrollLeft;
-    }, { passive: true });
-
-    carousel.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-
-      const x = e.touches[0].clientX;
-      const walk = startX - x; // Distance moved
-      carousel.scrollLeft = initialScrollLeft + walk;
-
-      // Maintain infinite loop math if they drag past the boundaries
-      if (carousel.scrollLeft >= singleGridWidth) {
+      if (carousel.scrollLeft >= singleGridWidth * 2) {
         carousel.scrollLeft -= singleGridWidth;
-        initialScrollLeft -= singleGridWidth;
       } else if (carousel.scrollLeft <= 0) {
         carousel.scrollLeft += singleGridWidth;
-        initialScrollLeft += singleGridWidth;
       }
     }, { passive: true });
 
-    const stopDragging = () => {
-      isDragging = false;
-      if (!track.classList.contains('is-hovered')) {
-        isPaused = false; // Resume auto-scroll if nothing is actively hovered
-      }
-    };
 
-    carousel.addEventListener('touchend', stopDragging);
-    carousel.addEventListener('touchcancel', stopDragging);
-
-
-    // --- HOVER LOGIC (Remains exactly the same for PC) ---
+    // --- PC HOVER LOGIC (Unchanged) ---
     track.addEventListener('mouseover', (e: MouseEvent) => {
-      if (isDragging) return; // Ignore accidental hovers during a mobile swipe
+      if (hasInteracted) return; // Disable hover effects after mobile interaction
 
       const target = e.target as Element;
       const card = target.closest('a');
@@ -228,7 +217,7 @@ import ProjectsGrid from '../components/portfolio/ProjectsGrid.astro';
     });
 
     track.addEventListener('mouseout', (e: MouseEvent) => {
-      if (isDragging) return;
+      if (hasInteracted) return;
 
       const target = e.target as Element;
       const card = target.closest('a');
