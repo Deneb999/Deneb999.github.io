@@ -47,3 +47,18 @@ So this process is done in seconds.
 Once the malicious app has mapped all the key - number combinations, it can again use its NFC capabilities to simulate being the original credit card, except
 it doesn't advertise EMV capabilities. Once connected to a reader, they both default to MagStripe, and the app (or the theoretical ring where such an app could be loaded)
 answers the challenge with its pre-cloned map of keys. This is the replay attack.
+
+Now, for strictly legal reasons, I can neither confirm nor deny that I actually built such an app. 
+As it turns out, trying to clone even your own credit card lands you in a bit of a legal gray area 
+(and franckly, deciphering the legal texts might have been the hardest part of the project). 
+But purely hypothetically, if I were to build it, it would be a very ugly Kotlin app, 
+and I would be incredibly grateful to [this medium post](https://medium.com/@androidcrypto/talk-to-your-credit-card-android-nfc-java-d782ff19fc4a) 
+for its invaluable guidance in building an Android - to card interface over which I could develop the methods specified in the paper.
+
+In the end, unfortunately, I couldn't develop my ring. I tried to scan one of my cards and found the vulnerability, but the card was expired by a few months.
+I issued a new one in order to clone and test it, but the new card arrived without MagStripe mode. With MasterCard officially removing magnetic stripes in 2029, I expect
+less and less cards will support this fallback method. Which, let's be clear, is fantastic for security, although a bit of a sad end for the time that
+I may or may have not invested into this project.
+
+In any case, it was definitely instructive. It allowed me to learn more about payment systems, NFC communications, Android and security. 
+And perhaps I will try to recreate my payment ring in the future using a different method.
